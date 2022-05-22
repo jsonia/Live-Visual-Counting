@@ -944,11 +944,12 @@ def data_uri_to_img(uri):
 # In[34]:
 
 
-def get_webcam_video(img_b64):
+def get_webcam_video(img_frame):
   """Populates global variable imgs by converting image URI to Numpy array."""
 
-  image = data_uri_to_img(img_b64)
-  print(image.shape)    
+  # image = data_uri_to_img(img_b64)
+  image = Image.fromarray(img_frame)
+  # print(image.shape)    
   imgs.append(image)
 
 
@@ -981,28 +982,54 @@ def record_video(interval_in_ms, num_frames, quality=0.8):
     
     
     i = i + 1
-    print(i)
+    # print(i)
     ret, frame = cap.read()
     if not ret:
         
         print("Can't receive frame (stream end?). Exiting ...")
         break
 
-    get_webcam_video(frame)
+    # get_webcam_video(frame)
+    imgs.append(frame)
+    cv.imshow('frame', frame)
+    if cv.waitKey(1) == ord('q'):
+        break
 
-    (pred_period, pred_score, within_period,
- per_frame_counts, chosen_stride) = get_counts(
-     model,
-     imgs,
-     strides=[1,2,3,4],
-     batch_size=20,
-     threshold=THRESHOLD,
-     within_period_threshold=WITHIN_PERIOD_THRESHOLD,
-     constant_speed=CONSTANT_SPEED,
-     median_filter=MEDIAN_FILTER,
-     fully_periodic=FULLY_PERIODIC)
+    # if len(imgs)%64 == 0:
+    #   (pred_period, pred_score, within_period,
+    #   per_frame_counts, chosen_stride) = get_counts(
+    #                                                 model,
+    #                                                 imgs,
+    #                                                 strides=[1,2,3,4],
+    #                                                 batch_size=20,
+    #                                                 threshold=THRESHOLD,
+    #                                                 within_period_threshold=WITHIN_PERIOD_THRESHOLD,
+    #                                                 constant_speed=CONSTANT_SPEED,
+    #                                                 median_filter=MEDIAN_FILTER,
+    #                                                 fully_periodic=FULLY_PERIODIC
+    #                                                 )
       
-    print(sum(per_frame_counts))
+    #   print(per_frame_counts[-1])
+
+  cap.release()
+  cv.waitKey(1)
+  cv.destroyAllWindows()
+
+  print("Running repNet..")
+  (pred_period, pred_score, within_period,
+  per_frame_counts, chosen_stride) = get_counts(
+                                                model,
+                                                imgs,
+                                                strides=[1,2,3,4],
+                                                batch_size=20,
+                                                threshold=THRESHOLD,
+                                                within_period_threshold=WITHIN_PERIOD_THRESHOLD,
+                                                constant_speed=CONSTANT_SPEED,
+                                                median_filter=MEDIAN_FILTER,
+                                                fully_periodic=FULLY_PERIODIC
+                                                )
+  
+  print(per_frame_counts[-1])
 
 """# Run RepNet"""
 
