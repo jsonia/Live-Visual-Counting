@@ -31,6 +31,7 @@ from time import time
 
 import multiprocessing
 
+frame_per_vid = 64
 use_cuda = torch.cuda.is_available()
 device = torch.device("cuda" if use_cuda else "cpu")
 print("Cuda availability : " + str(device))
@@ -218,18 +219,6 @@ class RepNet(nn.Module):
             return y1, y2, xret
         return y1, y2
 
-# Load model from the checkpoint
-frame_per_vid = 64
-model         = RepNet(frame_per_vid)
-model         = model.to(device)
-print("loading checkpoint")
-
-
-
-lastCkptPath  = '/Users/soniajaiswal/Documents/Masters/Quarter3/hci/live_rep_net/RepNetTraining330.pt'
-# lastCkptPath  = rootCountixFolder+'checkpoint/x3dbb5.pt'
-checkpoint    = torch.load(lastCkptPath, map_location=torch.device('cpu') )
-model.load_state_dict(checkpoint['state_dict'], strict = True)
 
 def training_loop(writer,
                   n_epochs,
@@ -560,8 +549,9 @@ def predRep(model, frames,j):
 from multiprocessing import Process, Manager
   
 def sender(L):
+    print("sender has started")
     i = 0
-    while i<128:
+    while i<192:
         cap = cv2.VideoCapture(0)        
         ret, frame = cap.read()
             
@@ -583,38 +573,52 @@ def sender(L):
     
     
 def receiver(L):
+    print("receiver has started")
+    # Load model from the checkpoint
     
+    a = time()
+    model         = RepNet(frame_per_vid)
+    model         = model.to(device)
+    print("loading checkpoint")
+
+
+
+    lastCkptPath  ='/Users/soniajaiswal/Documents/Masters/Quarter3/hci/live_rep_net/RepNetTraining330.pt'
+    # lastCkptPath  = rootCountixFolder+'checkpoint/x3dbb5.pt'
+    checkpoint    = torch.load(lastCkptPath, map_location=torch.device('cpu') )
+    model.load_state_dict(checkpoint['state_dict'], strict = True)
+
+
     time_ = []
     
     frames = []
     k = 0
     j = 0
     sum_c = 0
+    length_processed = 0 
     while True:
         
-        length_processed = 0 
+        
         frames = list(L)
        # print(len(frames))
-        if(len(frames)%64 == 0 ):
-            if(len(frames) != length_processed):                              
-                length_processed = len(frames)
-                a = time()            
-                fr = gc(frames)
-                print("from inside length_processed", length_processed)
-                print("from inside fr length", len(fr))
+        if(len(frames) >= 64*(j+1)):
+            print("the time now is", time()-a)            
+            fr = gc(frames)
+            print("from inside length_processed", length_processed)
+            print("from inside fr length", len(fr))
             
             
             
-                Xbest, countbest, periodicitybest, periodbest, simsbest, vidFrames = predRep(model, fr[0:(j+1)*64],j)
-                j = j + 1
+            Xbest, countbest, periodicitybest, periodbest, simsbest, vidFrames = predRep(model, fr[0:(j+1)*64],j)
+            j = j + 1
             
-                sum_c = sum_c + countbest[-1]
+            sum_c = sum_c + countbest[-1]
                 
                 
-                print("counts till now", sum_c)
-                b = time()
-                time_.append(b-a)
-                print("time to infer", b - a)
+            print("counts till now", sum_c)
+                #b = time()
+                #time_.append(b-a)
+                #print("time to infer", b - a)
         
         
        
@@ -632,6 +636,10 @@ def rand_r(conn):
 if __name__ == "__main__":
     
     
+    
+    
+
+    
     with Manager() as manager:
         L = manager.list()  # <-- can be shared between processes.
         
@@ -640,6 +648,7 @@ if __name__ == "__main__":
         
         p2.start()
         p1.start()
+        
         p2.join()
         p1.join()
         
