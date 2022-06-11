@@ -508,7 +508,7 @@ def gc(frames):
 def predRep(model, frames,j):
 #def predRep():
     
-    print("num_frames", j)
+    #print("num_frames", j)
     periodicitybest = []
     Xbest = None
     countbest = [-1]
@@ -602,10 +602,11 @@ def receiver(L):
         frames = list(L)
        # print(len(frames))
         if(len(frames) >= 64*(j+1)):
-            print("the time now is", time()-a)            
+            b = time()
+            print("time to receive frames is: ", b-a)
+            a = b
             fr = gc(frames)
-            print("from inside length_processed", length_processed)
-            print("from inside fr length", len(fr))
+            a1 = time()
             
             
             
@@ -615,10 +616,9 @@ def receiver(L):
             sum_c = sum_c + countbest[-1]
                 
                 
-            print("counts till now", sum_c)
-                #b = time()
-                #time_.append(b-a)
-                #print("time to infer", b - a)
+            print("counts till now: ", sum_c)
+            b1 = time()
+            print("time to infer: ", b1 - a1)
         
         
        
